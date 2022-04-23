@@ -143,8 +143,9 @@ data/
 .vscode/
 tensorboard_logs/
 lightning_logs/
+ckpt/
 cache_dir/
 outputs_bak/
 runs/
-examples/
 pyrightconfig.json
+
