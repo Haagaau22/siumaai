@@ -82,7 +82,7 @@ def convert_examples_to_feature(
 
 
 class GlobalPointerForNerDataset(Dataset):
-    def __init__(self, example_list: List[NerExample], tokenizer, label_to_id_map, max_seq_length, pad_id=-100, label_all_tokens=False, check_tokenization=False):
+    def __init__(self, example_list: List[NerExample], tokenizer, label_to_id_map, max_seq_length, pad_id=-100, label_all_tokens=False, check_tokenization=False, lazy_load=False):
         self.example_list = example_list
         self.tokenizer = tokenizer
         self.label_to_id_map = label_to_id_map
@@ -90,22 +90,35 @@ class GlobalPointerForNerDataset(Dataset):
         self.pad_id = pad_id
         self.label_all_tokens = label_all_tokens
         self.check_tokenization = check_tokenization
+        self.lazy_load = lazy_load
         
 
-        self.feature_list = convert_examples_to_feature(
-                self.tokenizer, 
-                self.example_list, 
-                self.label_to_id_map, 
-                self.max_seq_length, 
-                self.pad_id,
-                label_all_tokens=self.label_all_tokens,
-                check_tokenization=self.check_tokenization)
+        if lazy_load is False:
+            self.feature_list = convert_examples_to_feature(
+                    self.tokenizer, 
+                    self.example_list, 
+                    self.label_to_id_map, 
+                    self.max_seq_length, 
+                    self.pad_id,
+                    label_all_tokens=self.label_all_tokens,
+                    check_tokenization=self.check_tokenization)
 
     def __len__(self):
-        return len(self.feature_list)
+        # return len(self.feature_list)
+        return len(self.example_list)
 
     def __getitem__(self, idx) -> GlobalPointerForNerFeature:
-        return self.feature_list[idx]
+        if self.lazy_load is False:
+            return self.feature_list[idx]
+        else:
+            return convert_examples_to_feature(
+                    self.tokenizer, 
+                    [self.example_list[idx]], 
+                    self.label_to_id_map, 
+                    self.max_seq_length, 
+                    self.pad_id,
+                    label_all_tokens=self.label_all_tokens,
+                    check_tokenization=self.check_tokenization)[0]
 
 
 def convert_logits_to_examples(

@@ -1,5 +1,5 @@
 from typing import List
-from datasets.ner import NerExample
+from siumaai.features.ner import NerExample
 
 
 def calc_metric(gold_example_list: List[NerExample], pred_example_list: List[NerExample]):

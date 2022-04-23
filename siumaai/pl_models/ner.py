@@ -16,9 +16,10 @@ class Ner(pl.LightningModule):
         self.model = model_cls(**model_kwargs)
 
 
-    @lru_cache()
-    def total_steps(self):
-        return len(self.train_dataloader()) // self.trainer.accumulate_grad_batches * self.trainer.max_epochs
+    # @lru_cache()
+    # def total_steps(self):
+    #     import ipdb; ipdb.set_trace()
+    #     return len(self.train_dataloader()) // self.trainer.accumulate_grad_batches * self.trainer.max_epochs
 
     def configure_optimizers(self):
 
@@ -44,12 +45,12 @@ class Ner(pl.LightningModule):
                 optimizer_grouped_parameters, 
                 lr=self.hparams.learning_rate, 
                 eps=self.hparams.adam_epsilon)
-        num_train_steps = self.total_steps()
-        num_warmup_steps = int(self.hparams.warmup_rate * num_train_steps)
+        # num_train_steps = self.total_steps()
+        # num_warmup_steps = int(self.hparams.warmup_rate * num_train_steps)
         scheduler = get_linear_schedule_with_warmup(
                 optimizer, 
-                num_warmup_steps=num_warmup_steps, 
-                num_training_steps=num_train_steps)
+                num_warmup_steps=int(self.hparams.warmup_rate * self.trainer.estimated_stepping_batches), 
+                num_training_steps=self.trainer.estimated_stepping_batches)
         return {
             'optimizer': optimizer,
             'lr_scheduler': {
@@ -73,3 +74,64 @@ class Ner(pl.LightningModule):
 
         loss, *_ = self.model(**batch)
         self.log('val_loss', loss, on_epoch=True, prog_bar=True)
+
+
+
+class CrfNer(Ner):
+    def __init__(self, 
+            crf_learning_rate,
+            learning_rate, 
+            adam_epsilon, 
+            warmup_rate, 
+            weight_decay,
+            model_cls,
+            **model_kwargs):
+        super().__init__(learning_rate, adam_epsilon, warmup_rate, weight_decay, model_cls, **model_kwargs)
+        self.save_hyperparameters()
+
+    def configure_optimizers(self):
+
+        no_decay = ["bias", "LayerNorm.weight"]
+        optimizer_grouped_parameters = [
+            {
+                "params": [
+                    p 
+                    for n, p in self.model.named_parameters() 
+                    if 'crf' in n],
+                "weight_decay": self.hparams.weight_decay,
+                "lr": self.hparams.crf_learning_rate
+            },
+            {
+                "params": [
+                    p 
+                    for n, p in self.model.named_parameters() 
+                    if not any(nd in n for nd in no_decay) and 'crf' not in n],
+                "weight_decay": self.hparams.weight_decay,
+            },
+            {
+                "params": [
+                    p 
+                    for n, p in self.model.named_parameters() 
+                    if any(nd in n for nd in no_decay)],
+                "weight_decay": 0.0,
+            }
+        ]
+
+        optimizer = AdamW(
+                optimizer_grouped_parameters, 
+                lr=self.hparams.learning_rate, 
+                eps=self.hparams.adam_epsilon)
+        # num_train_steps = self.total_steps()
+        # num_warmup_steps = int(self.hparams.warmup_rate * num_train_steps)
+        scheduler = get_linear_schedule_with_warmup(
+                optimizer, 
+                num_warmup_steps=int(self.hparams.warmup_rate * self.trainer.estimated_stepping_batches), 
+                num_training_steps=self.trainer.estimated_stepping_batches)
+        return {
+            'optimizer': optimizer,
+            'lr_scheduler': {
+                'scheduler': scheduler,
+                'interval': 'step',
+                'frequency': 1
+            }
+        }

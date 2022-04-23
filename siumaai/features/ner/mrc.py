@@ -45,7 +45,8 @@ class MRCForNerDataset(Dataset):
             max_seq_length, 
             pad_id=-100, 
             label_all_tokens=False, 
-            check_tokenization=False):
+            check_tokenization=False,
+            lazy_load=False):
         self.example_list = example_list
         self.tokenizer = tokenizer
         self.label_to_query_map = label_to_query_map
@@ -53,6 +54,7 @@ class MRCForNerDataset(Dataset):
         self.pad_id = pad_id
         self.label_all_tokens = label_all_tokens
         self.check_tokenization = check_tokenization
+        self.lazy_load = lazy_load
 
         self.mrc_example_list = []
         for example_id, example in enumerate(self.example_list):
@@ -85,20 +87,30 @@ class MRCForNerDataset(Dataset):
                     ))
         
 
-        self.feature_list = convert_examples_to_feature(
-                self.tokenizer, 
-                self.mrc_example_list, 
-                self.max_seq_length, 
-                self.pad_id,
-                label_all_tokens=self.label_all_tokens,
-                check_tokenization=self.check_tokenization)
+        if self.lazy_load is False:
+            self.feature_list = convert_examples_to_feature(
+                    self.tokenizer, 
+                    self.mrc_example_list, 
+                    self.max_seq_length, 
+                    self.pad_id,
+                    label_all_tokens=self.label_all_tokens,
+                    check_tokenization=self.check_tokenization)
 
     def __len__(self):
-        return len(self.feature_list)
+        # return len(self.feature_list)
+        return len(self.mrc_example_list)
 
     def __getitem__(self, idx) -> MRCForNerFeature:
-        return self.feature_list[idx]
-
+        if self.lazy_load is False:
+            return self.feature_list[idx]
+        else:
+            return convert_examples_to_feature(
+                    self.tokenizer, 
+                    [self.mrc_example_list[idx]], 
+                    self.max_seq_length, 
+                    self.pad_id,
+                    label_all_tokens=self.label_all_tokens,
+                    check_tokenization=self.check_tokenization)[0]
 
 def convert_examples_to_feature(
         tokenizer,
