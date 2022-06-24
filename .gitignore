@@ -139,6 +139,7 @@ cython_debug/
 
 .python-version
 data/
+.pkl
 .idea/
 .vscode/
 tensorboard_logs/
