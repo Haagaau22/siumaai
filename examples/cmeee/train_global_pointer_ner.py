@@ -38,7 +38,7 @@ pl.seed_everything(2)
 
 LABEL_TO_ID_MAP = {}
 ID_TO_LABEL_MAP = {}
-with open('/home/zz/data/datasets/CMeEE/labels.txt', encoding='utf8')as f:
+with open('/content/drive/MyDrive/datasets/CMeEE/labels.txt', encoding='utf8')as f:
     index = 0
     for line in f:
         label = line.strip()
@@ -49,14 +49,14 @@ with open('/home/zz/data/datasets/CMeEE/labels.txt', encoding='utf8')as f:
 
 NUM_LABELS = len(LABEL_TO_ID_MAP)
 MAX_SEQ_LENGTH= 128
-BATCH_SIZE = 32
-PRETRAIN_MODEL_PATH='/home/zz/data/models/albert/albert_chinese_tiny'
+BATCH_SIZE = 120
+PRETRAIN_MODEL_PATH='bert-base-chinese'
 PAD_ID = -100
 
 
 
 # load dataset
-with open('/home/zz/data/datasets/CMeEE/data.json', encoding='utf-8') as f:
+with open('/content/drive/MyDrive/datasets/CMeEE/data.json', encoding='utf-8') as f:
     example_list = [
         NerExample(
             text=data['text'],
@@ -127,7 +127,7 @@ if len(sys.argv) == 1 or sys.argv[1] == 'train':
     }
 
     model = Ner(
-            learning_rate=0.0004365158322401656,
+            learning_rate=0.0001737800828,
             adam_epsilon=1e-8,
             warmup_rate=0.1,
             weight_decay=0.1,
