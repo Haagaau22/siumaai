@@ -1,1 +1,1 @@
-# pytorch-lightning for nlp
+# torch for nlp

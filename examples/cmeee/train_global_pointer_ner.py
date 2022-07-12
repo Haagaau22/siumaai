@@ -166,8 +166,9 @@ if len(sys.argv) == 1 or sys.argv[1] == 'train':
 elif len(sys.argv) > 1 and sys.argv[1] == 'test':
     import torch
     from siumaai.metrics.ner import calc_metric
-    TEST_BATCH_SIZE = 8
-    model = Ner.load_from_checkpoint('ckpt/global_pointer/epoch=0-val_loss=12.94.ckpt')
+    TEST_BATCH_SIZE = 80
+    model = Ner.load_from_checkpoint('ckpt/global_pointer/epoch=2-val_loss=12.92.ckpt')
+    model.to('cuda')
     model.eval()
 
 
@@ -192,7 +193,8 @@ elif len(sys.argv) > 1 and sys.argv[1] == 'test':
             })
 
         with torch.no_grad():
-            *_, logits = model(**default_collate(batch))
+            batch = {k:v.to('cuda') for k,v in default_collate(batch).items()}
+            *_, logits = model(**batch)
             logits = logits.detach().cpu()
         pred_example_list.extend(convert_logits_to_examples(feature_list, logits, ID_TO_LABEL_MAP))
         print(f'finish {start_index} -> {end_index}')
